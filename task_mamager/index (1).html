@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Manager</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-left">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="9 11 12 14 22 4"></polyline>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+        </svg>
+        <h1>My Tasks</h1>
+      </div>
+      <span class="date" id="date"></span>
+    </header>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Total</div>
+        <div class="stat-value" id="s-total">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Completed</div>
+        <div class="stat-value" id="s-done">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Remaining</div>
+        <div class="stat-value" id="s-left">0</div>
+      </div>
+    </div>
+
+    <div class="add-row">
+      <input type="text" id="task-input" placeholder="Add a new task…" autocomplete="off" />
+      <select id="priority-select" aria-label="Priority">
+        <option value="high">🔴 High</option>
+        <option value="medium" selected>🟡 Medium</option>
+        <option value="low">🟢 Low</option>
+      </select>
+      <button id="add-btn" onclick="addTask()" aria-label="Add task">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="filters" role="group" aria-label="Filter tasks">
+      <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+      <button class="filter-btn" onclick="setFilter('active', this)">Active</button>
+      <button class="filter-btn" onclick="setFilter('done', this)">Completed</button>
+      <button class="filter-btn" onclick="setFilter('high', this)">🔴 High</button>
+      <button class="filter-btn" onclick="setFilter('medium', this)">🟡 Medium</button>
+      <button class="filter-btn" onclick="setFilter('low', this)">🟢 Low</button>
+    </div>
+
+    <div class="task-list" id="task-list" role="list"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
