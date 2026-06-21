@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - ShopEasy</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="index.html" class="logo">🛍️ ShopEasy</a>
+    <div class="nav-links" id="navLinks"></div>
+  </nav>
+
+  <div class="container">
+    <h1 class="page-title">Admin Dashboard</h1>
+
+    <div style="display:flex; gap:10px; margin-bottom:24px;">
+      <button class="btn btn-primary" id="tabProductsBtn" onclick="switchTab('products')">Manage Products</button>
+      <button class="btn btn-outline" id="tabOrdersBtn" onclick="switchTab('orders')">Manage Orders</button>
+    </div>
+
+    <!-- ===== PRODUCTS TAB ===== -->
+    <div id="productsTab">
+      <div class="flex-between" style="margin-bottom:14px;">
+        <h2 style="font-size:1.2rem;">Products</h2>
+        <button class="btn btn-primary" onclick="openProductForm()">+ Add Product</button>
+      </div>
+      <div id="adminProductTableWrap">Loading...</div>
+    </div>
+
+    <!-- ===== ORDERS TAB ===== -->
+    <div id="ordersTab" style="display:none;">
+      <h2 style="font-size:1.2rem; margin-bottom:14px;">All Orders</h2>
+      <div id="adminOrderTableWrap">Loading...</div>
+    </div>
+  </div>
+
+  <!-- ===== Product Add/Edit Modal (simple inline form card) ===== -->
+  <div id="productFormOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:50;">
+    <div class="form-card" style="margin-top:60px;">
+      <h3 id="productFormTitle" style="margin-bottom:14px;">Add Product</h3>
+      <form id="productForm">
+        <input type="hidden" id="productId" />
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" id="pName" required />
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="pDescription" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Price (₹)</label>
+          <input type="number" id="pPrice" step="0.01" min="0" required />
+        </div>
+        <div class="form-group">
+          <label>Stock</label>
+          <input type="number" id="pStock" min="0" required />
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <input type="text" id="pCategory" />
+        </div>
+        <div class="form-group">
+          <label>Image URL</label>
+          <input type="text" id="pImageUrl" placeholder="https://..." />
+        </div>
+        <div class="form-error" id="productFormError"></div>
+        <div style="display:flex; gap:10px;">
+          <button type="submit" class="btn btn-primary btn-block">Save Product</button>
+          <button type="button" class="btn btn-outline btn-block" onclick="closeProductForm()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    renderNavLinks();
+
+    // Protect this page: must be logged in AND an admin
+    if (!Auth.isLoggedIn() || !Auth.isAdmin()) {
+      window.location.href = "login.html";
+    }
+
+    /* ---------- Tabs ---------- */
+    function switchTab(tab) {
+      const isProducts = tab === "products";
+      document.getElementById("productsTab").style.display = isProducts ? "block" : "none";
+      document.getElementById("ordersTab").style.display = isProducts ? "none" : "block";
+      document.getElementById("tabProductsBtn").className = isProducts ? "btn btn-primary" : "btn btn-outline";
+      document.getElementById("tabOrdersBtn").className = isProducts ? "btn btn-outline" : "btn btn-primary";
+      if (!isProducts) loadAdminOrders();
+    }
+
+    /* ---------- Products: list ---------- */
+    async function loadAdminProducts() {
+      const wrap = document.getElementById("adminProductTableWrap");
+      try {
+        const products = await ProductAPI.getAll();
+        if (products.length === 0) {
+          wrap.innerHTML = `<div class="empty-state">No products yet. Add your first one.</div>`;
+          return;
+        }
+        wrap.innerHTML = `
+          <table>
+            <thead>
+              <tr><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              ${products.map(p => `
+                <tr>
+                  <td>${p.name}</td>
+                  <td>${p.category || "-"}</td>
+                  <td>₹${Number(p.price).toFixed(2)}</td>
+                  <td>${p.stock}</td>
+                  <td>
+                    <button class="btn btn-outline" onclick='openProductForm(${JSON.stringify(p)})'>Edit</button>
+                    <button class="btn btn-danger" onclick="deleteProduct(${p.id})">Delete</button>
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
+      } catch (err) {
+        wrap.innerHTML = `<div class="empty-state">Error loading products: ${err.message}</div>`;
+      }
+    }
+
+    /* ---------- Products: add/edit form ---------- */
+    function openProductForm(product = null) {
+      document.getElementById("productFormOverlay").style.display = "block";
+      document.getElementById("productFormError").textContent = "";
+
+      if (product) {
+        document.getElementById("productFormTitle").textContent = "Edit Product";
+        document.getElementById("productId").value = product.id;
+        document.getElementById("pName").value = product.name;
+        document.getElementById("pDescription").value = product.description || "";
+        document.getElementById("pPrice").value = product.price;
+        document.getElementById("pStock").value = product.stock;
+        document.getElementById("pCategory").value = product.category || "";
+        document.getElementById("pImageUrl").value = product.image_url || "";
+      } else {
+        document.getElementById("productFormTitle").textContent = "Add Product";
+        document.getElementById("productForm").reset();
+        document.getElementById("productId").value = "";
+      }
+    }
+
+    function closeProductForm() {
+      document.getElementById("productFormOverlay").style.display = "none";
+    }
+
+    document.getElementById("productForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = document.getElementById("productId").value;
+      const errorEl = document.getElementById("productFormError");
+
+      const payload = {
+        name: document.getElementById("pName").value.trim(),
+        description: document.getElementById("pDescription").value.trim(),
+        price: parseFloat(document.getElementById("pPrice").value),
+        stock: parseInt(document.getElementById("pStock").value, 10),
+        category: document.getElementById("pCategory").value.trim(),
+        image_url: document.getElementById("pImageUrl").value.trim(),
+      };
+
+      try {
+        if (id) {
+          await ProductAPI.update(id, payload);
+          showToast("Product updated");
+        } else {
+          await ProductAPI.create(payload);
+          showToast("Product created");
+        }
+        closeProductForm();
+        loadAdminProducts();
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    });
+
+    async function deleteProduct(id) {
+      if (!confirm("Delete this product? This cannot be undone.")) return;
+      try {
+        await ProductAPI.remove(id);
+        showToast("Product deleted");
+        loadAdminProducts();
+      } catch (err) {
+        showToast("Error: " + err.message);
+      }
+    }
+
+    /* ---------- Orders: list + status update ---------- */
+    async function loadAdminOrders() {
+      const wrap = document.getElementById("adminOrderTableWrap");
+      wrap.innerHTML = "Loading...";
+      try {
+        const orders = await OrderAPI.allOrders();
+        if (orders.length === 0) {
+          wrap.innerHTML = `<div class="empty-state">No orders placed yet.</div>`;
+          return;
+        }
+
+        const statuses = ["pending", "processing", "shipped", "delivered", "cancelled"];
+
+        wrap.innerHTML = `
+          <table>
+            <thead>
+              <tr><th>Order #</th><th>Customer</th><th>Total</th><th>Status</th><th>Date</th></tr>
+            </thead>
+            <tbody>
+              ${orders.map(o => `
+                <tr>
+                  <td>#${o.id}</td>
+                  <td>${o.customer_name}<br/><span style="color:var(--text-light); font-size:0.8rem;">${o.customer_email}</span></td>
+                  <td>₹${Number(o.total_amount).toFixed(2)}</td>
+                  <td>
+                    <select onchange="updateStatus(${o.id}, this.value)">
+                      ${statuses.map(s => `<option value="${s}" ${s === o.status ? "selected" : ""}>${s}</option>`).join("")}
+                    </select>
+                  </td>
+                  <td>${new Date(o.created_at).toLocaleDateString()}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
+      } catch (err) {
+        wrap.innerHTML = `<div class="empty-state">Error loading orders: ${err.message}</div>`;
+      }
+    }
+
+    async function updateStatus(orderId, status) {
+      try {
+        await OrderAPI.updateStatus(orderId, status);
+        showToast(`Order #${orderId} marked as ${status}`);
+      } catch (err) {
+        showToast("Error: " + err.message);
+      }
+    }
+
+    loadAdminProducts();
+  </script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Order Placed - ShopEasy</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="index.html" class="logo">🛍️ ShopEasy</a>
+    <div class="nav-links" id="navLinks"></div>
+  </nav>
+
+  <div class="container">
+    <div class="empty-state">
+      <div style="font-size:3rem;">✅</div>
+      <h2 style="margin:14px 0;">Order Placed Successfully!</h2>
+      <p id="orderIdText" style="margin-bottom:20px;"></p>
+      <a href="orders.html" class="btn btn-primary">View My Orders</a>
+      <a href="index.html" class="btn btn-outline" style="margin-left:10px;">Continue Shopping</a>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    renderNavLinks();
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get("orderId");
+    if (orderId) {
+      document.getElementById("orderIdText").textContent = `Order #${orderId} has been placed and is now pending.`;
+    }
+  </script>
+</body>
+</html>

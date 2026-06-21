@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Orders - ShopEasy</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="index.html" class="logo">🛍️ ShopEasy</a>
+    <div class="nav-links" id="navLinks"></div>
+  </nav>
+
+  <div class="container">
+    <h1 class="page-title">My Orders</h1>
+    <div id="ordersContainer">Loading...</div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    renderNavLinks();
+
+    if (!Auth.isLoggedIn()) {
+      window.location.href = "login.html";
+    }
+
+    async function loadOrders() {
+      const container = document.getElementById("ordersContainer");
+      try {
+        const orders = await OrderAPI.myOrders();
+
+        if (orders.length === 0) {
+          container.innerHTML = `<div class="empty-state">You haven't placed any orders yet.<br/><br/><a href="index.html" class="btn btn-primary">Start Shopping</a></div>`;
+          return;
+        }
+
+        container.innerHTML = orders.map(orderCardHTML).join("");
+      } catch (err) {
+        container.innerHTML = `<div class="empty-state">Could not load orders: ${err.message}</div>`;
+      }
+    }
+
+    function orderCardHTML(order) {
+      const date = new Date(order.created_at).toLocaleString();
+      const itemsHTML = order.items.map(i => `
+        <div class="row">
+          <span>${i.product_name} × ${i.quantity}</span>
+          <span>₹${(i.price * i.quantity).toFixed(2)}</span>
+        </div>
+      `).join("");
+
+      return `
+        <div class="cart-summary" style="margin: 0 0 20px 0; max-width:100%;">
+          <div class="flex-between">
+            <strong>Order #${order.id}</strong>
+            <span class="badge badge-${order.status}">${order.status}</span>
+          </div>
+          <p style="color:var(--text-light); font-size:0.85rem; margin:6px 0 12px;">Placed on ${date}</p>
+          ${itemsHTML}
+          <div class="row total-row"><span>Total</span><span>₹${Number(order.total_amount).toFixed(2)}</span></div>
+          <p style="font-size:0.85rem; color:var(--text-light); margin-top:8px;">Shipping to: ${order.shipping_address || "N/A"}</p>
+        </div>
+      `;
+    }
+
+    loadOrders();
+  </script>
+</body>
+</html>

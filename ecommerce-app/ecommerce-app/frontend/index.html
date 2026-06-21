@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopEasy - Online Store</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="logo">🛍️ ShopEasy</div>
+    <div class="nav-links" id="navLinks"></div>
+  </nav>
+
+  <div class="container">
+    <div class="flex-between">
+      <h1 class="page-title">Product Catalog</h1>
+    </div>
+
+    <div class="form-group" style="max-width:300px; margin-bottom:20px;">
+      <input type="text" id="searchInput" placeholder="Search products..." />
+    </div>
+
+    <div id="productGrid" class="product-grid">
+      <p>Loading products...</p>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    renderNavLinks();
+
+    async function loadProducts(search = "") {
+      const grid = document.getElementById("productGrid");
+      grid.innerHTML = "<p>Loading products...</p>";
+
+      try {
+        const query = search ? `?search=${encodeURIComponent(search)}` : "";
+        const products = await ProductAPI.getAll(query);
+
+        if (products.length === 0) {
+          grid.innerHTML = `<div class="empty-state">No products found.</div>`;
+          return;
+        }
+
+        grid.innerHTML = products.map(productCardHTML).join("");
+      } catch (err) {
+        grid.innerHTML = `<div class="empty-state">Could not load products: ${err.message}</div>`;
+      }
+    }
+
+    function productCardHTML(p) {
+      const outOfStock = p.stock <= 0;
+      return `
+        <div class="product-card">
+          <img src="${p.image_url || 'https://via.placeholder.com/300x300?text=No+Image'}" alt="${p.name}" />
+          <div class="product-card-body">
+            <h3>${p.name}</h3>
+            <div class="product-price">₹${Number(p.price).toFixed(2)}</div>
+            <div class="product-stock">${outOfStock ? "Out of stock" : `${p.stock} in stock`}</div>
+            <button class="btn btn-primary btn-block" ${outOfStock ? "disabled" : ""}
+              onclick='addToCart(${JSON.stringify(p)})'>
+              ${outOfStock ? "Unavailable" : "Add to Cart"}
+            </button>
+          </div>
+        </div>`;
+    }
+
+    function addToCart(product) {
+      Cart.addItem(product, 1);
+      renderNavLinks();
+      showToast(`${product.name} added to cart`);
+    }
+
+    let searchTimeout;
+    document.getElementById("searchInput").addEventListener("input", (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => loadProducts(e.target.value), 350);
+    });
+
+    loadProducts();
+  </script>
+</body>
+</html>

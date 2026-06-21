@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout - ShopEasy</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="index.html" class="logo">🛍️ ShopEasy</a>
+    <div class="nav-links" id="navLinks"></div>
+  </nav>
+
+  <div class="container">
+    <h1 class="page-title">Checkout</h1>
+
+    <div id="orderSummary" class="section-spacer"></div>
+
+    <div class="form-card" style="margin: 20px 0 0 0; max-width: 500px;">
+      <h3 style="margin-bottom:14px;">Shipping Address</h3>
+      <form id="checkoutForm">
+        <div class="form-group">
+          <label for="address">Delivery Address</label>
+          <textarea id="address" rows="3" required placeholder="House no, Street, City, State, PIN"></textarea>
+        </div>
+        <div class="form-error" id="formError"></div>
+        <button type="submit" class="btn btn-primary btn-block" id="placeOrderBtn">Place Order</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    renderNavLinks();
+
+    if (!Auth.isLoggedIn()) {
+      window.location.href = "login.html";
+    }
+
+    const items = Cart.getItems();
+    if (items.length === 0) {
+      window.location.href = "cart.html";
+    }
+
+    function renderSummary() {
+      const total = Cart.getTotal();
+      document.getElementById("orderSummary").innerHTML = `
+        <div class="cart-summary" style="margin-left:0; max-width:500px;">
+          ${items.map(i => `
+            <div class="row"><span>${i.name} × ${i.quantity}</span><span>₹${(i.price * i.quantity).toFixed(2)}</span></div>
+          `).join("")}
+          <div class="row total-row"><span>Total</span><span>₹${total.toFixed(2)}</span></div>
+        </div>
+      `;
+    }
+    renderSummary();
+
+    document.getElementById("checkoutForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const address = document.getElementById("address").value.trim();
+      const errorEl = document.getElementById("formError");
+      const btn = document.getElementById("placeOrderBtn");
+
+      errorEl.textContent = "";
+      btn.disabled = true;
+      btn.textContent = "Placing order...";
+
+      try {
+        const orderItems = items.map((i) => ({ product_id: i.product_id, quantity: i.quantity }));
+        const result = await OrderAPI.place(orderItems, address);
+
+        Cart.clear();
+        renderNavLinks();
+        window.location.href = `order-success.html?orderId=${result.order_id}`;
+      } catch (err) {
+        errorEl.textContent = err.message;
+        btn.disabled = false;
+        btn.textContent = "Place Order";
+      }
+    });
+  </script>
+</body>
+</html>
